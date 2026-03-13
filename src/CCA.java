@@ -6,6 +6,8 @@ import javax.imageio.ImageIO;
 
 
 public class CCA {
+    public static final String ERR_STRING = "Could not load the input image";
+    public static final String DASH = "----------";
     /**
      * Loads an image from the specified file and converts it to a 2D boolean array.
      * Each pixel is converted to true if its red channel value is greater than 128,
@@ -34,9 +36,9 @@ public class CCA {
 			}
 			
 			return img_bool;
-		} catch (Exception e) {
+		} catch (Exception _) {
 			System.out.println("Invalid image file");
-			return null;
+			return new boolean[0][0];
 		}		
 	}
 	
@@ -88,7 +90,7 @@ public class CCA {
 
         // make objects to return later
         QuickUnion quick_union = new QuickUnion(size);
-        List<List<Integer>> contiguous_pixels = new ArrayList<List<Integer>>();
+        List<List<Integer>> contiguous_pixels = new ArrayList<>();
 
         // iterate over all the rows 
         for (int row = 0; row < rows; row++) {
@@ -101,7 +103,7 @@ public class CCA {
                 if (!imgBoolean[row][col]) {
                     // if we found True pixels in the row
                     // dump the row into contiguous pixels and reset row_pixel
-                    if (row_pixel.size() !=0) {
+                    if (!row_pixel.isEmpty()) {
                       contiguous_pixels.add(row_pixel);
                       row_pixel = new ArrayList<>();
                     }
@@ -132,7 +134,7 @@ public class CCA {
 
             }
             // if we reach the end of the row, dump the rest of the row into contiguous pixels
-            if (row_pixel.size() !=0) {
+            if (!row_pixel.isEmpty()) {
                 contiguous_pixels.add(row_pixel);
             }
         }
@@ -165,8 +167,10 @@ public class CCA {
         for (int i = 0; i < rawCC.size(); i++) {
             List<Integer> L1 = rawCC.get(i);
 
+            // when using a for loop, warning came up, changed to while loop
             // start at the point after L1
-            for (int j = i + 1; j < rawCC.size(); j++) {
+            int j = i + 1;
+            while (j < rawCC.size()) {
                 List<Integer> L2 = rawCC.get(j);
 
                 // select first element from each list
@@ -182,8 +186,9 @@ public class CCA {
                     L1.addAll(L2);
                     // then remove L2 from the rawCC
                     rawCC.remove(L2);
-                    // when we remove something from rawCC, we have to NOT increment j
-                    j--;
+                } else {
+                    // when we do not remove something from rawCC, we have to increment j
+                    j++;
                 }
             }
         }
@@ -274,7 +279,7 @@ public class CCA {
             int shape_area = component.size();
 
             // find the ratio of the area of space this CC takes up
-            double area_ratio = shape_area / bounding_box_area;
+            double area_ratio = (double) shape_area / bounding_box_area;
             
             // determine whether this CC is a rectangle or triangle
             if (area_ratio >= threshold) {
@@ -304,8 +309,8 @@ public class CCA {
         for (File file : test_images) {
             // pretty much use most of main method in here
             boolean[][] img = loadImage(file.getPath());
-            if (img == null) {
-                System.out.println("Could not load the input image");
+            if (img.length == 0) {
+                System.out.println(ERR_STRING);
                 return;
             }
             
@@ -317,8 +322,8 @@ public class CCA {
             int imgH = 0;
             int imgW = 0;
             Pair<List<Integer>, List<Integer>> separatedCCs = null;
-            List<Integer> triangles = null;
-            List<Integer> rectangles = null;
+            List<Integer> triangles = new ArrayList<>();
+            List<Integer> rectangles = new ArrayList<>();
 
             for (int i = 0; i < 5; i++) {
                 // take the start time for the CCA analysis
@@ -360,7 +365,7 @@ public class CCA {
 
             System.out.println("Number of pixels: \t" + (imgH * imgW));
 
-            System.out.println("----------");
+            System.out.println(DASH);
         }
     }
 
@@ -394,7 +399,7 @@ public class CCA {
             // pretty much use most of main method in here
             boolean[][] img = loadImage(file.getPath());
             if (img == null) {
-                System.out.println("Could not load the input image");
+                System.out.println(ERR_STRING);
                 return;
             }
 
@@ -425,9 +430,11 @@ public class CCA {
                 }
 
                 time_pixels.add((end - start) / 1_000_000.0);
-
             }
         }
+        // remove warning
+        separatedCCs.first();
+        
         // find the information needed for the print statements at the end
         double min = Collections.min(time_pixels);
 
@@ -455,7 +462,7 @@ public class CCA {
         System.out.printf("Average run time (ms):\t%.6f\n", avg);
         System.out.printf("Median time (ms):\t%.6f\n", median);
 
-        System.out.println("----------");
+        System.out.println(DASH);
     }
 
     /**
@@ -488,7 +495,7 @@ public class CCA {
             // pretty much use most of main method in here
             boolean[][] img = loadImage(file.getPath());
             if (img == null) {
-                System.out.println("Could not load the input image");
+                System.out.println(ERR_STRING);
                 return;
             }
 
@@ -520,6 +527,9 @@ public class CCA {
 
             }
         }
+        // remove warning
+        separatedCCs.first();
+        
         // find the information needed for the print statements at the end
         double min = Collections.min(time_cc);
 
@@ -547,7 +557,7 @@ public class CCA {
         System.out.printf("Average run time (ms):\t%.6f\n", avg);
         System.out.printf("Median time (ms):\t%.6f\n", median);
 
-        System.out.println("----------");
+        System.out.println(DASH);
 
     }
 	
@@ -565,90 +575,92 @@ public class CCA {
      *
      * @param args command-line arguments (not used)
      */
-    public static void main(String[] args) {
-		Scanner scanner = new Scanner(System.in);
-        System.out.println(new File(".").getAbsolutePath());
-        while (true) {
-            System.out.println("Menu: ");
-            System.out.println("\tsf : single file");
-            System.out.println("\tdc : data collection");
-            System.out.println("\texit : quit program");
-
-            String choice = scanner.nextLine().trim().toLowerCase();
+    public static void main() {
+		try (Scanner scanner = new Scanner(System.in)) {
+            // get the file
+            System.out.println(new File(".").getAbsolutePath());
             
-            // Analyze One Image Mode
-            if (choice.equals("sf")) {
-                System.out.print("Enter image file name: ");
-                String user_file = scanner.nextLine();
+            // prompt a continuous input from the user
+            while (true) {
+                System.out.println("Menu: ");
+                System.out.println("\tsf : single file");
+                System.out.println("\tdc : data collection");
+                System.out.println("\texit : quit program");
 
-                boolean[][] img = loadImage("test_images/" + user_file);
-                if (img == null){
-                    System.out.println("Could not load the input image");
-                    return;
+                String choice = scanner.nextLine().trim().toLowerCase();
+                
+                // Analyze One Image Mode
+                if (choice.equals("sf")) {
+                    System.out.print("Enter image file name: ");
+                    String user_file = scanner.nextLine();
+
+                    boolean[][] img = loadImage("test_images/" + user_file);
+                    if (img.length == 0){
+                        System.out.println(ERR_STRING);
+                        return;
+                    }
+                    if (img.length <= 100) {
+                        System.out.println(boolImgToString(img));
+                    }
+            
+                    Pair<QuickUnion, List<List<Integer>>> result = img2UF(img);
+            
+                    List<List<Integer>> CCs = genCC(result.first(), result.second());
+                    System.out.println("Total shapes : " + CCs.size());
+            
+                    int imgH = img.length;
+                    int imgW = img[0].length;
+                    Pair<List<Integer>, List<Integer>> separatedCCs = separateCC(imgH, imgW, CCs, 0.75);
+                    List<Integer> triangles = separatedCCs.first();
+                    List<Integer> rectangles = separatedCCs.second();
+            
+                    System.out.println("Number of triangles: " + triangles.size());
+                    System.out.println("Number of rectangles: " + rectangles.size());
                 }
-                if (img.length <= 100) {
-                    System.out.println(boolImgToString(img));
+
+                // Data Collection Mode
+                else if (choice.equals("dc")) {
+                    File f = new File("test_images/");
+                    File [] files = f.listFiles();
+                    // run data collection for all the files at once
+                    System.out.println("-------------------");
+                    System.out.println("RAW DATA COLLECTION");
+                    System.out.println("-------------------");
+                    dataCollection(files);
+
+                    // run it for each unique resolution of R
+                    System.out.println("-----------------");
+                    System.out.println("UNIQUE RESOLUTION");
+                    System.out.println("-----------------");
+                    dataCollectionUniqueResolution(files, 10000);
+                    dataCollectionUniqueResolution(files, 20000);
+                    dataCollectionUniqueResolution(files, 40000);
+                    dataCollectionUniqueResolution(files, 80000);
+                    dataCollectionUniqueResolution(files, 160000);
+                    dataCollectionUniqueResolution(files, 320000);
+                    dataCollectionUniqueResolution(files, 640000);
+
+                    // run it for each unique connected components of M
+                    System.out.println("---------------------------");
+                    System.out.println("UNIQUE CONNECTED COMPONENTS");
+                    System.out.println("---------------------------");
+                    dataCollectionUniqueCC(files, 4);
+                    dataCollectionUniqueCC(files, 8);
+                    dataCollectionUniqueCC(files, 16);
+                    dataCollectionUniqueCC(files, 32);
+                    dataCollectionUniqueCC(files, 64);
                 }
-        
-                Pair<QuickUnion, List<List<Integer>>> result = img2UF(img);
-        
-                List<List<Integer>> CCs = genCC(result.first(), result.second());
-                System.out.println("Total shapes : " + CCs.size());
-        
-                int imgH = img.length;
-                int imgW = img[0].length;
-                Pair<List<Integer>, List<Integer>> separatedCCs = separateCC(imgH, imgW, CCs, 0.75);
-                List<Integer> triangles = separatedCCs.first();
-                List<Integer> rectangles = separatedCCs.second();
-        
-                System.out.println("Number of triangles: " + triangles.size());
-                System.out.println("Number of rectangles: " + rectangles.size());
-            }
+            
+                else if (choice.equals("exit")) {
+                    System.out.println("Exiting program");
+                    break;
+                }
 
-            // Data Collection Mode
-            else if (choice.equals("dc")) {
-                File f = new File("test_images/");
-                File [] files = f.listFiles();
-                // run data collection for all the files at once
-                System.out.println("-------------------");
-                System.out.println("RAW DATA COLLECTION");
-                System.out.println("-------------------");
-                dataCollection(files);
-
-                // run it for each unique resolution of R
-                System.out.println("-----------------");
-                System.out.println("UNIQUE RESOLUTION");
-                System.out.println("-----------------");
-                dataCollectionUniqueResolution(files, 10000);
-                dataCollectionUniqueResolution(files, 20000);
-                dataCollectionUniqueResolution(files, 40000);
-                dataCollectionUniqueResolution(files, 80000);
-                dataCollectionUniqueResolution(files, 160000);
-                dataCollectionUniqueResolution(files, 320000);
-                dataCollectionUniqueResolution(files, 640000);
-
-                // run it for each unique connected components of M
-                System.out.println("---------------------------");
-                System.out.println("UNIQUE CONNECTED COMPONENTS");
-                System.out.println("---------------------------");
-                dataCollectionUniqueCC(files, 4);
-                dataCollectionUniqueCC(files, 8);
-                dataCollectionUniqueCC(files, 16);
-                dataCollectionUniqueCC(files, 32);
-                dataCollectionUniqueCC(files, 64);
-            }
-        
-            else if (choice.equals("exit")) {
-                System.out.println("Exiting program");
-                break;
-            }
-
-            else {
-                System.out.println("Invalid command");
+                else {
+                    System.out.println("Invalid command");
+                }
             }
         }
-
-        scanner.close();
 	}
 
 }
